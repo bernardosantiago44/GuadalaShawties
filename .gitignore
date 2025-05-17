@@ -1,0 +1,10 @@
+docs/
+POIs/
+STREETS_NAMING_ADDRESSING/
+STREETS_NAV/
+HERE_L11_Tiles.geojson
+data.zip
+*.csv
+*.geojson
+*.json
+*.txt
