@@ -1,5 +1,10 @@
 import requests
 import math
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+api_key = os.getenv("API_KEY")
 
 
 def lat_lon_to_tile(lat, lon, zoom):
@@ -73,7 +78,6 @@ def get_satellite_tile(lat,lon,zoom,tile_format,api_key):
 ### EXECUTION
 ##########################################################
 # Define the parameters for the tile request
-api_key = 'hVMYjmFxrUAqIAfkD4F9Ou6r78NI6gmk6DsoWjJ8PKw'
 latitude = 19.27063
 longitude = -99.62963
 zoom_level = 19  # Zoom level
@@ -81,6 +85,6 @@ tile_size = 512  # Tile size in pixels
 tile_format = 'png'  # Tile format
 
 # Execute request and save tile
-wkt_bounds = get_satellite_tile(latitude,longitude,zoom_level,tile_format,api_key)
+wkt_bounds = get_satellite_tile(latitude,longitude,zoom_level,tile_format, api_key)
 print(wkt_bounds)
 
