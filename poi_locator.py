@@ -53,11 +53,11 @@ def find_poi_in_csv(csv_path, poi_id):
                 }
     return None
 
-def get_poi_coordinates_from_link(geojson_path, csv_path, poi_id):
+def get_poi_coordinates_from_link(sector, poi_id):
     #Finds the geographic coordinates of a POI located along a LineString at a given percentage.
 
-    features = load_geojson(geojson_path)
-    poi_info = find_poi_in_csv(csv_path, poi_id)
+    features = load_geojson(f"STREETS_NAMING_ADDRESSING/SREETS_NAMING_ADDRESSING_{sector}.geojson")
+    poi_info = find_poi_in_csv(f"POIs/POI_{sector}.csv", poi_id)
 
     if poi_info is None:
         print(f"POI_ID {poi_id} not found in CSV.")
@@ -84,11 +84,9 @@ def get_poi_coordinates_from_link(geojson_path, csv_path, poi_id):
 # -------------------------------
 if __name__ == "__main__":
     sector = "4815075"
-    geojson_file = f"STREETS_NAMING_ADDRESSING/SREETS_NAMING_ADDRESSING_{sector}.geojson"
-    csv_file = f"POIs/POI_{sector}.csv"
     poi_id_to_find = 123456  # Replace with actual POI_ID
 
-    get_poi_coordinates_from_link(geojson_file, csv_file, poi_id_to_find)
+    get_poi_coordinates_from_link(sector, poi_id_to_find)
 
 
 
