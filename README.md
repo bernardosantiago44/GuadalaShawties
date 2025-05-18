@@ -2,7 +2,7 @@
 
 ## 🚀 Inspiration
 
-Learning, 
+Learning new technologies and solving challenges that motivate us to keep on growing as developers and growing our network by working as a team and sharing knowledge with each other.
 
 ---
 
