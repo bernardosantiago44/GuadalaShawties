@@ -83,8 +83,9 @@ def get_poi_coordinates_from_link(geojson_path, csv_path, poi_id):
 # Example execution
 # -------------------------------
 if __name__ == "__main__":
-    geojson_file = "STREETS_NAMING_ADDRESSING/SREETS_NAMING_ADDRESSING_4815075.geojson"
-    csv_file = "POIS.csv"
+    sector = "4815075"
+    geojson_file = f"STREETS_NAMING_ADDRESSING/SREETS_NAMING_ADDRESSING_{sector}.geojson"
+    csv_file = f"POIs/POI_{sector}.csv"
     poi_id_to_find = 123456  # Replace with actual POI_ID
 
     get_poi_coordinates_from_link(geojson_file, csv_file, poi_id_to_find)
