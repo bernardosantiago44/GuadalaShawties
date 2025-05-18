@@ -8,9 +8,9 @@ from poi_locator import (
     load_geojson,
     find_poi_in_csv,
     interpolate_point_by_percentage,
-    generate_images
 )
 from geopy.distance import geodesic
+from complete_process import complete_process
 
 
 def calculate_line_length(coords):
@@ -146,10 +146,11 @@ def main(sector: str, limit: int = None):
     print("Sample Violations:")
     for r in inside_results[:5]:
         print(f"• {r['POI_ID']} '{r['POI_NAME']}' on {r['street_name']} at {r['percentage']}% → {r['coord']}")
-        generate_images(sector, r['POI_ID'])
+        result, action = complete_process( r['coord'][1], r['coord'][0], sector)
+        print(f"  → Result: {result}, Action: {action}")
 
     return total_multidigit, valid_criteria, inside_count, inside_results
 
 
 if __name__ == '__main__':
-    main(sector='4815078', limit=None)
+    main(sector='4815079', limit=None)
