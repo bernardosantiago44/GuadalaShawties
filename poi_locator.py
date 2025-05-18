@@ -79,46 +79,54 @@ def get_poi_coordinates_from_link(sector, poi_id):
             print(f"Total link distance: {total_distance:.2f} meters")
             poi_coords = interpolate_point_by_percentage(coords, percentage)
             print(f"POI coordinates at {percentage}%: {poi_coords}")
-            degree = calcular_angulo(coords)
+            degree = calculate_degree(coords)
             print(f"Angle of the street: {degree:.2f} degrees")
             return poi_coords, degree
 
     print(f"Link ID {target_link_id} not found in GeoJSON.")
     return None
 
-def calcular_angulo(coordenadas):
+def calculate_degree(coordinates):
     """
-    Calcula el ángulo entre el primer y segundo punto de una calle.
-    El ángulo está en grados respecto al eje norte (vertical).
+    Calculates the angle between the first and second point of a street.
+    The angle is in degrees with respect to the north axis (vertical).
     """
-    lon1, lat1 = coordenadas[0]
-    lon2, lat2 = coordenadas[1]
+    lon1, lat1 = coordinates[0]
+    lon2, lat2 = coordinates[1]
 
     dy = lat2 - lat1
     dx = lon2 - lon1
-    angulo_rad = math.atan2(dy, dx)
-    angulo_deg = math.degrees(angulo_rad)
+    degree_rad = math.atan2(dy, dx)
+    degree_rad = math.degrees(degree_rad)
 
-    return angulo_deg
+    return degree_rad
 
-def rotar_imagen(nombre_archivo, angulo):
+def rotate_image(file_name, angulo):
     """
-    Rota una imagen dada en grados negativos (rotación antihoraria).
-    Guarda una nueva imagen rotada.
+    Rotates an image given in negative degrees (counter-clockwise rotation).
+    Saves a new rotated image.
     """
-    imagen = Image.open(nombre_archivo)
-    imagen_rotada = imagen.rotate(-angulo, expand=True)
-    imagen_rotada.save("rotated_tile.png")
-    print("Imagen rotada y guardada como rotated_tile.png")
+    image = Image.open(file_name)
+    rotated_image = image.rotate(-angulo, expand=True)
+    rotated_image.save("rotated_tile.png")
+
+def generate_images(sector, poi_id):
+    """
+    Generates images for a given POI by fetching satellite imagery and rotating it.
+    """
+    coordinates, degree = get_poi_coordinates_from_link(sector, poi_id)
+    if coordinates:
+        get_satellite_tile(coordinates[1], coordinates[0], 19, "png", os.getenv("API_KEY"))
+        rotate_image("satellite_tile.png", degree)
+    else:
+        print(f"Could not generate images for POI_ID {poi_id}.")
 # -------------------------------
 # Example execution
 # -------------------------------
 if __name__ == "__main__":
     sector = "4815075"
     poi_id_to_find = 1222901799  # Replace with actual POI_ID
-    coordinates, degree = get_poi_coordinates_from_link(sector, poi_id_to_find)
-    get_satellite_tile(coordinates[1], coordinates[0], 19, "png", os.getenv("API_KEY"))
-    rotar_imagen("satellite_tile.png", degree)
+    generate_images(sector, poi_id_to_find)
 
 
 
