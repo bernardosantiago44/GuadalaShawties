@@ -2,9 +2,10 @@ docs/
 POIs/
 STREETS_NAMING_ADDRESSING/
 STREETS_NAV/
+.venv/
 HERE_L11_Tiles.geojson
 data.zip
 *.csv
 *.geojson
 *.json
-*.txt
+*.png
