@@ -86,11 +86,23 @@ def main(sector, limit=None):
             violations.append((poi_id, poi_coord, link_id, street, pct))
 
     print(f"Total MD={total}, criteria met={valid}, violations={inside}\n")
+    suggested_actions = []
+
     for poi_id, (lon,lat), link_id, street, pct in violations[:100]:
         angle = calculate_degree(by_name[link_id]["geometry"]["coordinates"])
         res, act = complete_process(lat, lon, sector, angle=angle)
+        suggested_actions.append((poi_id, act[0], lon, lat))
+        export_actions(suggested_actions, out_dir="results.csv")
         print(f"• {poi_id} on {street}@{pct}% → [{lon:.6f},{lat:.6f}]")
         print(f"   → Result: {res}, Action: {act}")
+
+def export_actions(actions, out_dir="actions.csv"):
+    """Exporta acciones a CSV."""
+    with open(out_dir, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["POI_ID", "Action", "Lon", "Lat"])
+        for poi_id, act, lon, lat in actions:
+            writer.writerow([poi_id, act, lon, lat])
 
 if __name__ == "__main__":
     main("4815075", limit=None)
