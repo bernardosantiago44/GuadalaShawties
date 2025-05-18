@@ -1,90 +1,70 @@
+#!/usr/bin/env python3
 import os
 from PIL import Image
-from poi_locator import get_satellite_tile, rotate_tile, crop_center, calculate_degree, load_geojson
-from classify_general_clip import classify_general
-from dotenv import load_dotenv 
-load_dotenv()
-# ——————————————————————————————————————————————
+from satellite_imagery_tile_request import get_satellite_tile
+from classify_general_clip import classify_general, classify_half
 
-def complete_process(lat, lon, sector, poi, angle=0, zoom=17, patch_size=160, offset=10, out_dir="patches"):
-    """
-    Procesa un POI dado por coordenadas, genera dos parches (calle y banqueta),
-    clasifica ambos y retorna el resultado según reglas:
-    - Si ambos <= 0.5: ["NPOI", "NPOI"]
-    - Si calle <= 0.5 y banqueta > 0.5: ["NPOI", <LABEL_BANQUETA>] (lado incorrecto)
-    - Si calle > 0.5 y banqueta <= 0.5: [<LABEL_CALLE>, "NPOI"] (legit exception)
-    - Si ambos > 0.5: el de mayor confianza primero
-    """
+def rotate_tile(tile_img, angle):
+    return tile_img.rotate(-angle, expand=True)
+
+def crop_center(img, size):
+    w, h = img.size
+    half = size // 2
+    return img.crop((w//2-half, h//2-half, w//2+half, h//2+half))
+
+def complete_process(lat, lon, sector,
+                     angle=0, zoom=17,
+                     patch_size=160, offset=10,
+                     out_dir="patches"):
     os.makedirs(out_dir, exist_ok=True)
-    api_key = os.getenv("HERE_API_KEY")
-    if not api_key:
-        raise RuntimeError("Define HERE_API_KEY en tu entorno antes de ejecutar")
+    key = os.getenv("HERE_API_KEY")
+    if not key:
+        raise RuntimeError("Define HERE_API_KEY en tu entorno")
 
-    # 1. Generar imagen satelital centrada en la calle
-    get_satellite_tile(lat, lon, zoom, "png", api_key)
-    ref_path = os.path.join(out_dir, "temp_reference.png")
-    os.replace("satellite_tile.png", ref_path)
+    # 1) descargar tile y guardarlo
+    get_satellite_tile(lat, lon, zoom, patch_size*3, key)
+    ref = os.path.join(out_dir, "tmp_ref.png")
+    os.replace("satellite_tile.png", ref)
 
-    # 2. Rotar imagen si es necesario
-    features = load_geojson(f"STREETS_NAMING_ADDRESSING/SREETS_NAMING_ADDRESSING_{sector}.geojson")
-    target_link_id = poi["LINK_ID"]
-    for feature in features:
-        if feature["properties"]["link_id"] == target_link_id:
-            coords = feature["geometry"]["coordinates"]
-    angle = calculate_degree(coords)
-    rotated = rotate_tile(ref_path, angle)
-    rot_path = os.path.join(out_dir, "temp_rotated.png")
-    rotated.save(rot_path)
+    # 2) rotar y abrirlo
+    tile = rotate_tile(Image.open(ref), angle)
 
-    # 3. Generar parche centrado (calle)
-    patch_calle = crop_center(rotated, patch_size)
-    patch_calle_path = os.path.join(out_dir, "temp_patch_calle.png")
-    patch_calle.save(patch_calle_path)
+    # 3) parche calle (centrado)
+    pc = crop_center(tile, patch_size)
+    pc_path = os.path.join(out_dir, "tmp_calle.png")
+    pc.save(pc_path)
 
-    # 4. Generar parche desplazado (banqueta)
-    w, h = rotated.size
-    left = (w - patch_size) // 2
-    top = (h - patch_size) // 2 - offset
-    patch_banqueta = rotated.crop((left, top, left + patch_size, top + patch_size))
-    patch_banqueta_path = os.path.join(out_dir, "temp_patch_banqueta.png")
-    patch_banqueta.save(patch_banqueta_path)
+    # 4) parche banqueta (offset hacia abajo)
+    w, h = tile.size
+    left = (w - patch_size)//2
+    top  = (h - patch_size)//2 + offset
+    pb = tile.crop((left, top, left+patch_size, top+patch_size))
+    pb_path = os.path.join(out_dir, "tmp_banqueta.png")
+    pb.save(pb_path)
 
-    # 5. Clasificar ambos parches
-    label_calle, conf_calle = classify_general(patch_calle_path)
-    label_banqueta, conf_banqueta = classify_general(patch_banqueta_path)
+    # 5a) clasificar calle (general)
+    lbl_c, cf_c = classify_general(pc_path)
+    poi_c = (lbl_c != "no point of interest") and cf_c > 0.5
+    norm_c = lbl_c.upper() if poi_c else "NPOI"
 
-    def norm_label(label, conf):
-        return "NPOI" if conf <= 0.5 or label == "no point of interest" else label.upper()
+    # 5b) clasificar banqueta (half-shot)
+    lbl_b, cf_b = classify_half(pb_path)
+    poi_b = ("lower half" in lbl_b) and cf_b > 0.5
+    norm_b = "POI_BANQUETA" if poi_b else "NPOI"
 
-    norm_calle = norm_label(label_calle, conf_calle)
-    norm_banqueta = norm_label(label_banqueta, conf_banqueta)
-
-    # 6. Lógica de validación según reglas
-    if conf_calle <= 0.5 and conf_banqueta <= 0.5:
-        result = ["NPOI", "NPOI"]
-        action = ["No POI in reality"]
-    elif conf_calle <= 0.5 and conf_banqueta > 0.5:
-        result = ["NPOI", norm_banqueta]
-        action = ["POI in the wrong side of the street"]
-    elif conf_calle > 0.5 and conf_banqueta <= 0.5:
-        result = [norm_calle, "NPOI"]
-        action = ["Legit exception"]
+    # 6) decidir acción
+    if not poi_c and not poi_b:
+        result, action = ["NPOI","NPOI"], ["No POI in reality"]
+    elif not poi_c and poi_b:
+        result, action = ["NPOI", norm_b], ["POI on sidewalk"]
+    elif poi_c and not poi_b:
+        result, action = [norm_c,"NPOI"], ["Legit exception"]
     else:
-        # Ambos > 0.5: solo el de mayor confianza cuenta, el otro es NPOI
-        if conf_calle >= conf_banqueta:
-            result = [norm_calle, "NPOI"]
-            action = ["Legit exception"]
+        if cf_c >= cf_b:
+            result, action = [norm_c,"NPOI"], ["Legit exception"]
         else:
-            result = [norm_banqueta, "NPOI"]
-            action = ["Legit exception"]
+            result, action = ["NPOI", norm_b], ["POI on sidewalk"]
 
-    # Limpieza temporal
-    for f in [ref_path, rot_path, patch_calle_path, patch_banqueta_path]:
-        if os.path.exists(f):
-            os.remove(f)
+    
 
     return result, action
-
-# Ejemplo de uso:
-if __name__ == "__main__":
-    print(complete_process(19.27063, -99.62963, "4815075"))
