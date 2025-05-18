@@ -40,7 +40,7 @@ def interpolate_point_by_percentage(coords, pct):
 
 def calculate_degree(coords):
     lon1, lat1 = coords[0]
-    lon2, lat2 = coords[1]
+    lon2, lat2 = coords[-1]
     dy, dx = lat2 - lat1, lon2 - lon1
     return math.degrees(math.atan2(dy, dx))
 
@@ -63,8 +63,8 @@ def get_poi_coordinates_from_link(sector, poi_id):
         if feat["properties"].get("link_id") == link_id:
             coords = feat["geometry"]["coordinates"]
             pt = interpolate_point_by_percentage(coords, pct)
-            bear = calculate_degree(coords)
-            return pt, bear
+            degree = calculate_degree(coords)
+            return pt, degree
     print(f"Link {link_id} no hallado")
     return None
 

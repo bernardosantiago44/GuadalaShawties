@@ -1,12 +1,12 @@
 import os
 from PIL import Image
-from poi_locator import get_satellite_tile, rotate_tile, crop_center
+from poi_locator import get_satellite_tile, rotate_tile, crop_center, calculate_degree, load_geojson
 from classify_general_clip import classify_general
-from dotenv import load_dotenv
+from dotenv import load_dotenv 
 load_dotenv()
 # ——————————————————————————————————————————————
 
-def complete_process(lat, lon, sector, angle=0, zoom=17, patch_size=160, offset=10, out_dir="patches"):
+def complete_process(lat, lon, sector, poi, angle=0, zoom=17, patch_size=160, offset=10, out_dir="patches"):
     """
     Procesa un POI dado por coordenadas, genera dos parches (calle y banqueta),
     clasifica ambos y retorna el resultado según reglas:
@@ -26,6 +26,12 @@ def complete_process(lat, lon, sector, angle=0, zoom=17, patch_size=160, offset=
     os.replace("satellite_tile.png", ref_path)
 
     # 2. Rotar imagen si es necesario
+    features = load_geojson(f"STREETS_NAMING_ADDRESSING/SREETS_NAMING_ADDRESSING_{sector}.geojson")
+    target_link_id = poi["LINK_ID"]
+    for feature in features:
+        if feature["properties"]["link_id"] == target_link_id:
+            coords = feature["geometry"]["coordinates"]
+    angle = calculate_degree(coords)
     rotated = rotate_tile(ref_path, angle)
     rot_path = os.path.join(out_dir, "temp_rotated.png")
     rotated.save(rot_path)
