@@ -3,6 +3,9 @@ import os
 from PIL import Image
 from satellite_imagery_tile_request import get_satellite_tile
 from classify_general_clip import classify_general, classify_half
+from dotenv import load_dotenv
+load_dotenv()
+
 
 def rotate_tile(tile_img, angle):
     return tile_img.rotate(-angle, expand=True)
