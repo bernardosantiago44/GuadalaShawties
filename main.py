@@ -128,7 +128,8 @@ def main(sector: str, limit: int = None):
             poly = Polygon(ring)
             if not poly.contains(Point(poi_coord)):
                 continue
-
+            
+            # Store POIs that meet conditions
             inside_count += 1
             inside_results.append({
                 'POI_ID':      poi_id,
