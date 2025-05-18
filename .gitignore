@@ -10,3 +10,4 @@ data.zip
 *.json
 *.png
 .env
+__pycache__/

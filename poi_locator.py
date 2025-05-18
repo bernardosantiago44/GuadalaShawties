@@ -1,5 +1,9 @@
 import json
 import csv
+import math
+import os
+from PIL import Image
+from satellite_imagery_tile_request import get_satellite_tile
 from geopy.distance import geodesic
 
 def load_geojson(file_path):
@@ -46,6 +50,7 @@ def find_poi_in_csv(csv_path, poi_id):
     with open(csv_path, newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
+            print(f"Checking POI_ID {row['POI_ID']} against {poi_id}")
             if int(row["POI_ID"]) == poi_id:
                 return {
                     "link_id": int(row["LINK_ID"]),
@@ -74,19 +79,47 @@ def get_poi_coordinates_from_link(sector, poi_id):
             print(f"Total link distance: {total_distance:.2f} meters")
             poi_coords = interpolate_point_by_percentage(coords, percentage)
             print(f"POI coordinates at {percentage}%: {poi_coords}")
-            return poi_coords
+            degree = calcular_angulo(coords)
+            print(f"Angle of the street: {degree:.2f} degrees")
+            return poi_coords, degree
 
     print(f"Link ID {target_link_id} not found in GeoJSON.")
     return None
 
+def calcular_angulo(coordenadas):
+    """
+    Calcula el ángulo entre el primer y segundo punto de una calle.
+    El ángulo está en grados respecto al eje norte (vertical).
+    """
+    lon1, lat1 = coordenadas[0]
+    lon2, lat2 = coordenadas[1]
+
+    dy = lat2 - lat1
+    dx = lon2 - lon1
+    angulo_rad = math.atan2(dy, dx)
+    angulo_deg = math.degrees(angulo_rad)
+
+    return angulo_deg
+
+def rotar_imagen(nombre_archivo, angulo):
+    """
+    Rota una imagen dada en grados negativos (rotación antihoraria).
+    Guarda una nueva imagen rotada.
+    """
+    imagen = Image.open(nombre_archivo)
+    imagen_rotada = imagen.rotate(-angulo, expand=True)
+    imagen_rotada.save("rotated_tile.png")
+    print("Imagen rotada y guardada como rotated_tile.png")
 # -------------------------------
 # Example execution
 # -------------------------------
 if __name__ == "__main__":
     sector = "4815075"
-    poi_id_to_find = 123456  # Replace with actual POI_ID
+    poi_id_to_find = 1222901799  # Replace with actual POI_ID
+    coordinates, degree = get_poi_coordinates_from_link(sector, poi_id_to_find)
+    get_satellite_tile(coordinates[1], coordinates[0], 19, "png", os.getenv("API_KEY"))
+    rotar_imagen("satellite_tile.png", degree)
 
-    get_poi_coordinates_from_link(sector, poi_id_to_find)
 
 
 
