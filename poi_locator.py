@@ -50,7 +50,7 @@ def find_poi_in_csv(csv_path, poi_id):
     with open(csv_path, newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
-            print(f"Checking POI_ID {row['POI_ID']} against {poi_id}")
+            #print(f"Checking POI_ID {row['POI_ID']} against {poi_id}")
             if int(row["POI_ID"]) == poi_id:
                 return {
                     "link_id": int(row["LINK_ID"]),
@@ -73,14 +73,14 @@ def get_poi_coordinates_from_link(sector, poi_id):
 
     for feature in features:
         if feature["properties"]["link_id"] == target_link_id:
-            print(f"Link ID {target_link_id} found.")
+            #print(f"Link ID {target_link_id} found.")
             coords = feature["geometry"]["coordinates"]
-            total_distance = calculate_total_distance(coords)
-            print(f"Total link distance: {total_distance:.2f} meters")
+            #total_distance = calculate_total_distance(coords)
+            #print(f"Total link distance: {total_distance:.2f} meters")
             poi_coords = interpolate_point_by_percentage(coords, percentage)
-            print(f"POI coordinates at {percentage}%: {poi_coords}")
+            #print(f"POI coordinates at {percentage}%: {poi_coords}")
             degree = calculate_degree(coords)
-            print(f"Angle of the street: {degree:.2f} degrees")
+            #print(f"Angle of the street: {degree:.2f} degrees")
             return poi_coords, degree
 
     print(f"Link ID {target_link_id} not found in GeoJSON.")
